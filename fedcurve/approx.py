@@ -1,28 +1,28 @@
 import numpy as np
 from functools import partial
-from .interp import interp_function
+from .interp import piecewise_interp
 
 
 def roc_curve_approx(q_neg, q_pos, n_q, interp):
     q_frac = np.linspace(0, 1, n_q)
-    fpr_func_approx = interp_function(q_neg, q_frac, interp)
-    tpr_func_approx = interp_function(q_pos, q_frac, interp)
+    fpr_func_approx = piecewise_interp(q_neg, q_frac, interp)
+    tpr_func_approx = piecewise_interp(q_pos, q_frac, interp)
 
     return fpr_func_approx, tpr_func_approx
 
 
-def pr_curve_approx_sepa(q_neg, q_pos, n_q, n_neg, n_pos, interp):
+def pr_curve_approx_separate(q_neg, q_pos, n_q, n_neg, n_pos, interp):
     # separate negative and positive samples
     q_frac = np.linspace(0, 1, n_q)
-    fpr_func_approx = interp_function(q_neg, q_frac, interp)
-    recall_func_approx = interp_function(q_pos, q_frac, interp)
+    fpr_func_approx = piecewise_interp(q_neg, q_frac, interp)
+    recall_func_approx = piecewise_interp(q_pos, q_frac, interp)
 
     def precision_func(score, fpr_func, tpr_func, n_neg, n_pos):
         fp = fpr_func(score) * n_neg
         tp = tpr_func(score) * n_pos
-        p = fp + tp
+        pp = fp + tp
         precision = np.ones_like(score)
-        np.divide(tp, p, out=precision, where=(p != 0))
+        np.divide(tp, pp, out=precision, where=(pp != 0))
         return precision
 
     precision_func_approx = partial(
@@ -36,19 +36,18 @@ def pr_curve_approx_sepa(q_neg, q_pos, n_q, n_neg, n_pos, interp):
     return precision_func_approx, recall_func_approx
 
 
-def pr_curve_approx_comb(q_pos, q_all, n_q, n_pos, n_all, interp):
+def pr_curve_approx_combine(q_pos, q_all, n_q, n_pos, n_all, interp):
     # combine negative and positive samples
     q_frac = np.linspace(0, 1, n_q)
-    ppr_func_approx = interp_function(q_all, q_frac, interp)
-    recall_func_approx = interp_function(q_pos, q_frac, interp)
+    ppr_func_approx = piecewise_interp(q_all, q_frac, interp)
+    recall_func_approx = piecewise_interp(q_pos, q_frac, interp)
 
     def precision_func(score, tpr_func, ppr_func, n_pos, n_all):
         tp = tpr_func(score) * n_pos
         pp = ppr_func(score) * n_all
         precision = np.ones_like(score)
         np.divide(tp, pp, out=precision, where=(pp != 0))
-        precision = np.clip(precision, 0.0, 1.0)
-        return precision
+        return np.clip(precision, 0.0, 1.0)
 
     precision_func_approx = partial(
         precision_func,

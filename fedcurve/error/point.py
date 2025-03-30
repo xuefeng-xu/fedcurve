@@ -23,7 +23,7 @@ def mae_mse_roc(
 
     # Duplicate scores are merged, thus need to compute weighted average
     _, sample_weight = np.unique(y_score, return_counts=True)
-    # threasholds in ROC are in descending order
+    # thresholds in ROC are in descending order
     sample_weight = sample_weight[::-1]
 
     return mae_mse(
@@ -44,7 +44,7 @@ def mae_mse_pr(
 
     # Duplicate scores are merged, thus need to compute weighted average
     _, sample_weight = np.unique(y_score, return_counts=True)
-    # threasholds in PR are in ascending order
+    # thresholds in PR are in ascending order
 
     return mae_mse(
         recall_true,

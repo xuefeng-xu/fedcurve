@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import dlaplace
 
 
 # continuous
@@ -9,7 +10,7 @@ def Laplace(eps, sens, size):
 
 
 # continuous
-def DistrbutedLaplace(eps, sens, n_clients, size):
+def DistributedLaplace(eps, sens, n_clients, size):
     # Difference of two Gamma random variables
     # Reference: equation (3) and (4) in https://doi.org/10.1109/TDSC.2015.2484326
     k = 1 / n_clients
@@ -20,18 +21,14 @@ def DistrbutedLaplace(eps, sens, n_clients, size):
 
 # discrete
 def Geometric(eps, sens, size):
-    # Geometric Mechanism: two-sided geometric distribution
-    # Reference: IBM Diffprivlib
-    # https://diffprivlib.readthedocs.io/en/0.6.0/_modules/diffprivlib/mechanisms/geometric.html#Geometric.randomise
-    scale = -eps / sens
-    unif_rv = np.random.rand(size) - 0.5
-    unif_rv *= 1 + np.exp(scale)
-    sgn = np.sign(unif_rv).astype(int)
-    return sgn * np.floor(np.log(sgn * unif_rv) / scale).astype(int)
+    # Geometric Mechanism: two-sided Geometric distribution
+    # Discrete Laplace is equivalent to two-sided Geometric
+    a = eps / sens
+    return dlaplace.rvs(a=a, loc=0, size=size)
 
 
 # discrete
-def DistrbutedGeometric(eps, sens, n_clients, size):
+def DistributedGeometric(eps, sens, n_clients, size):
     # Difference of two Polya (negative binomial) random variables
     # Reference: Theorem 5.1 in https://doi.org/10.1109/TDSC.2015.2484326
     n = 1 / n_clients
@@ -43,12 +40,16 @@ def DistrbutedGeometric(eps, sens, n_clients, size):
 def LocalDP_noise(eps, sens, size, noise_type="continuous"):
     if noise_type == "continuous":
         return Laplace(eps, sens, size)
-    else:  # discrete
+    elif noise_type == "discrete":
         return Geometric(eps, sens, size)
+    else:
+        raise ValueError("noise_type must be 'continuous' or 'discrete'.")
 
 
-def DistrbutedDP_noise(eps, sens, n_clients, size, noise_type="continuous"):
+def DistributedDP_noise(eps, sens, n_clients, size, noise_type="continuous"):
     if noise_type == "continuous":
-        return DistrbutedLaplace(eps, sens, n_clients, size)
-    else:  # discrete
-        return DistrbutedGeometric(eps, sens, n_clients, size)
+        return DistributedLaplace(eps, sens, n_clients, size)
+    elif noise_type == "discrete":
+        return DistributedGeometric(eps, sens, n_clients, size)
+    else:
+        raise ValueError("noise_type must be 'continuous' or 'discrete'.")

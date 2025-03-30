@@ -10,7 +10,7 @@ def abs_diff_func(x, y_true, y_approx):
 
 
 def area_error_roc(fpr_true, tpr_true, fpr_func_approx, tpr_func_approx, n_scores=1e4):
-    roc_true = interp1d(fpr_true, tpr_true, kind="linear")
+    roc_true = interp1d(fpr_true, tpr_true, kind="linear", assume_sorted=True)
 
     # Approximate tpr(score) ~ fpr(score)
     s = np.linspace(1, 0, int(n_scores))
@@ -26,7 +26,7 @@ def area_error_roc(fpr_true, tpr_true, fpr_func_approx, tpr_func_approx, n_score
 
 
 def auc_error_roc(fpr_true, tpr_true, fpr_func_approx, tpr_func_approx, n_scores=1e4):
-    # threasholds in ROC are in descending order
+    # thresholds in ROC are in descending order
     s = np.linspace(1, 0, int(n_scores))
     fpr_approx = fpr_func_approx(s)
     tpr_approx = tpr_func_approx(s)
@@ -93,7 +93,7 @@ def avg_prec(precision, recall):
 def auc_error_pr(
     precision_true, recall_true, precision_func_approx, recall_func_approx, n_scores=1e4
 ):
-    # threasholds in PR are in ascending order
+    # thresholds in PR are in ascending order
     s = np.linspace(0, 1, int(n_scores))
     precision_approx = precision_func_approx(s)
     recall_approx = recall_func_approx(s)
