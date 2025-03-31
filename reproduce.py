@@ -298,7 +298,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # n_q_list = np.array([5, 7, 10, 14, 19, 26, 37, 51, 72, 100])
-    n_q_list = np.array([136, 190, 264, 368, 514, 717, 1000])
+    if args.dataset in ["adult", "bank"]:
+        n_q_list = np.array([5, 7, 10, 14, 19, 26, 37, 51, 72, 100])
+    else:  # ["cover", "sep", "oct", "nov"]
+        n_q_list = np.array(
+            [5, 7, 10, 14, 19, 26, 37, 51, 72, 100, 136, 190, 264, 368, 514, 717, 1000]
+        )
 
     main(args.dataset, args.classifier, n_q_list)
