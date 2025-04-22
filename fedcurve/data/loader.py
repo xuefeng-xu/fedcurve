@@ -37,8 +37,8 @@ def download_and_extract(url, zip_file, extract_path):
     extract(zip_file, extract_path)
 
 
-def load_adult():
-    file = Path("./dataset/adult/adult.data")
+def load_adult(dataset_dir):
+    file = dataset_dir / "adult.data"
 
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)
@@ -61,8 +61,8 @@ def load_adult():
     return X, y
 
 
-def load_bank():
-    file = Path("./dataset/bank/bank-full.csv")
+def load_bank(dataset_dir):
+    file = dataset_dir / "bank-full.csv"
 
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)
@@ -88,8 +88,8 @@ def load_bank():
     return X, y
 
 
-def load_cover():
-    file = Path("./dataset/cover/covtype.data")
+def load_cover(dataset_dir):
+    file = dataset_dir / "covtype.data"
 
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)
@@ -113,8 +113,8 @@ def load_cover():
     return X, y
 
 
-def load_kaggle(tag):
-    file = Path(f"./dataset/{tag}/train.csv")
+def load_kaggle(dataset_dir, tag):
+    file = dataset_dir / "train.csv"
 
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)
@@ -140,8 +140,8 @@ def load_kaggle(tag):
     return read_csv(file)
 
 
-def load_sep():
-    X = load_kaggle("sep")
+def load_sep(dataset_dir):
+    X = load_kaggle(dataset_dir, "sep")
 
     X.pop("id")
     y = X.pop("claim")
@@ -152,8 +152,8 @@ def load_sep():
     return X, y
 
 
-def load_oct():
-    X = load_kaggle("oct")
+def load_oct(dataset_dir):
+    X = load_kaggle(dataset_dir, "oct")
 
     X.pop("id")
     y = X.pop("target")
@@ -161,8 +161,8 @@ def load_oct():
     return X, y
 
 
-def load_nov():
-    X = load_kaggle("nov")
+def load_nov(dataset_dir):
+    X = load_kaggle(dataset_dir, "nov")
 
     X.pop("id")
     y = X.pop("target")
@@ -171,13 +171,16 @@ def load_nov():
 
 
 def load_data(dataset):
+    PROJECT_ROOT = Path(__file__).parent.parent.parent
+    dataset_dir = PROJECT_ROOT / f"dataset/{dataset}"
+
     datasets = {
-        "adult": load_adult,
-        "bank": load_bank,
-        "cover": load_cover,
-        "sep": load_sep,
-        "oct": load_oct,
-        "nov": load_nov,
+        "adult": lambda: load_adult(dataset_dir),
+        "bank": lambda: load_bank(dataset_dir),
+        "cover": lambda: load_cover(dataset_dir),
+        "sep": lambda: load_sep(dataset_dir),
+        "oct": lambda: load_oct(dataset_dir),
+        "nov": lambda: load_nov(dataset_dir),
     }
 
     if dataset not in datasets:

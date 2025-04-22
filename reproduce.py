@@ -6,27 +6,35 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 
-def run_experiment(**params):
-    cmd = ["python", "main.py"]
+def _check(method):
+    if method not in ["fedcurve", "dpecdf"]:
+        raise ValueError(f"Unsupported method: {method}")
+
+
+def run_experiment(method, **params):
+    _check(method)
+
+    cmd = ["python", f"{method}/main.py"]
     for key, value in params.items():
         cmd.extend([f"--{key}", str(value)])
 
     subprocess.run(cmd, check=True)
 
 
-def read_csv(dataset, classifier):
-    file_prefix = f"./result/{dataset}_{classifier}_"
-    # file_prefix = f"./result/archive/{dataset}/{classifier}/"
+def read_csv(method, dataset, classifier):
+    _check(method)
+
+    file_prefix = f"./result/{method}/{dataset}_{classifier}_"
     roc = pd.read_csv(file_prefix + "ROC.txt")
     pr = pd.read_csv(file_prefix + "PR.txt")
     return roc, pr
 
 
-def main(dataset, classifier, n_q_list):
-    figsize = (5, 5)
+def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
+    n_q_list = np.asarray(n_q_list)
 
     # Compare interp=["linear", "pchip"]
-    # Fix: privacy="SA", pr_strategy="separate"
+    # Fix privacy="SA", pr_strategy="separate"
     exp_interp_sa = [
         {
             "curve": curve,
@@ -43,31 +51,31 @@ def main(dataset, classifier, n_q_list):
         for interp in ["linear", "pchip"]
     ]
     for params in exp_interp_sa:
-        run_experiment(**params)
+        run_experiment("fedcurve", **params)
 
     # Compare interp=["linear", "pchip"]
-    # Fix: privacy="DDP", epsilon=1, pr_strategy="separate"
+    # Fix privacy="DDP", epsilon=epsilon, pr_strategy="separate"
     exp_interp_ddp = [
         {
             "curve": curve,
             "dataset": dataset,
             "classifier": classifier,
             "privacy": "DDP",
-            "epsilon": 1,
+            "epsilon": epsilon,
             "n_q": n_q,
             "pr_strategy": "separate",
             "interp": interp,
-            "n_reps": 10,
+            "n_reps": 5,
         }
         for curve in ["ROC", "PR"]
         for n_q in n_q_list
         for interp in ["linear", "pchip"]
     ]
     for params in exp_interp_ddp:
-        run_experiment(**params)
+        run_experiment("fedcurve", **params)
 
     # create plots
-    roc, pr = read_csv(dataset, classifier)
+    roc, pr = read_csv("fedcurve", dataset, classifier)
     pr = pr[pr["pr_strategy"] == "separate"]
 
     for curve in ["ROC", "PR"]:
@@ -75,7 +83,6 @@ def main(dataset, classifier, n_q_list):
         fig, ax = plt.subplots(figsize=figsize)
 
         ax.plot(n_q_list, 1 / n_q_list, "k:", label="1/Q")
-        # ax.plot(n_q_list, 1 / n_q_list**2, "y:", label="1/Q^2")
 
         df_sa = df[df["privacy"] == "SA"]
         df_ddp = df[df["privacy"] == "DDP"]
@@ -89,7 +96,6 @@ def main(dataset, classifier, n_q_list):
                 label=f"SA, {interp}",
             )
 
-            epsilon = 1
             df_ddp_interp = df_ddp[
                 (df_ddp["interp"] == interp) & (df_ddp["epsilon"] == epsilon)
             ]
@@ -121,8 +127,31 @@ def main(dataset, classifier, n_q_list):
 
     ###########################################################################
 
-    # Compare epsilon=[0.1, 0.3, 1]
-    # Fix: privacy="DDP", interp="pchip", pr_strategy="separate"
+    # Compare EQ, SA, epsilon=[0.1, 0.3, 1]
+    # Fix privacy="EQ", interp="pchip", pr_strategy="separate"
+    exp_eq = [
+        {
+            "curve": curve,
+            "dataset": dataset,
+            "classifier": classifier,
+            "privacy": "EQ",
+            "n_q": n_q,
+            "pr_strategy": "separate",
+            "interp": "pchip",
+            "n_reps": 1,
+        }
+        for curve in ["ROC", "PR"]
+        for n_q in n_q_list
+    ]
+    for params in exp_eq:
+        run_experiment("fedcurve", **params)
+
+    # Compare EQ, SA, epsilon=[0.1, 0.3, 1]
+    # Fix privacy="DDP", interp="pchip", pr_strategy="separate"
+    epsilon_list = [0.1, 0.3, 1]
+    eps_exec = epsilon_list.copy()
+    eps_exec.remove(epsilon)
+
     exp_epsilon_ddp = [
         {
             "curve": curve,
@@ -133,17 +162,17 @@ def main(dataset, classifier, n_q_list):
             "n_q": n_q,
             "pr_strategy": "separate",
             "interp": "pchip",
-            "n_reps": 10,
+            "n_reps": 5,
         }
         for curve in ["ROC", "PR"]
         for n_q in n_q_list
-        for epsilon in [0.1, 0.3]
+        for epsilon in eps_exec
     ]
     for params in exp_epsilon_ddp:
-        run_experiment(**params)
+        run_experiment("fedcurve", **params)
 
     # create plots
-    roc, pr = read_csv(dataset, classifier)
+    roc, pr = read_csv("fedcurve", dataset, classifier)
     roc = roc[roc["interp"] == "pchip"]
     pr = pr[(pr["pr_strategy"] == "separate") & (pr["interp"] == "pchip")]
 
@@ -152,7 +181,14 @@ def main(dataset, classifier, n_q_list):
         fig, ax = plt.subplots(figsize=figsize)
 
         ax.plot(n_q_list, 1 / n_q_list, "k:", label="1/Q")
-        # ax.plot(n_q_list, 1 / n_q_list**2, "y:", label="1/Q^2")
+
+        df_eq = df[(df["privacy"] == "EQ")]
+        ax.plot(
+            df_eq["n_q"],
+            df_eq["area_error"],
+            "o--",
+            label=f"EQ",
+        )
 
         df_sa = df[(df["privacy"] == "SA")]
         ax.plot(
@@ -163,11 +199,11 @@ def main(dataset, classifier, n_q_list):
         )
 
         df_ddp = df[(df["privacy"] == "DDP")]
-        for epsilon in [0.1, 0.3, 1]:
-            df_ddp_epsilon = df_ddp[df_ddp["epsilon"] == epsilon]
+        for eps in epsilon_list:
+            df_ddp_eps = df_ddp[df_ddp["epsilon"] == eps]
             ae_mean, ae_var = [], []
             for n_q in n_q_list:
-                df_q = df_ddp_epsilon[df_ddp_epsilon["n_q"] == n_q]
+                df_q = df_ddp_eps[df_ddp_eps["n_q"] == n_q]
                 ae_mean.append(df_q["area_error"].mean())
                 ae_var.append(df_q["area_error"].var())
 
@@ -176,7 +212,7 @@ def main(dataset, classifier, n_q_list):
                 ae_mean,
                 yerr=ae_var,
                 fmt="o-",
-                label=rf"DDP $\epsilon$={epsilon}",
+                label=rf"DDP $\epsilon$={eps}",
             )
 
         ax.set_xlabel("Q")
@@ -194,7 +230,7 @@ def main(dataset, classifier, n_q_list):
     ###########################################################################
 
     # Compare pr_strategy=["separate", "combine"]
-    # Fix: curve="PR", privacy="SA", interp="pchip"
+    # Fix curve="PR", privacy="SA", interp="pchip"
     exp_pr_strategy_sa = [
         {
             "curve": "PR",
@@ -210,36 +246,35 @@ def main(dataset, classifier, n_q_list):
         for n_q in n_q_list
     ]
     for params in exp_pr_strategy_sa:
-        run_experiment(**params)
+        run_experiment("fedcurve", **params)
 
     # Compare pr_strategy=["separate", "combine"]
-    # curve="PR", privacy="DDP", epsilon=1, interp="pchip"
+    # curve="PR", privacy="DDP", epsilon=epsilon, interp="pchip"
     exp_pr_strategy_ddp = [
         {
             "curve": "PR",
             "dataset": dataset,
             "classifier": classifier,
             "privacy": "DDP",
-            "epsilon": 1,
+            "epsilon": epsilon,
             "n_q": n_q,
             "pr_strategy": pr_strategy,
             "interp": "pchip",
-            "n_reps": 10,
+            "n_reps": 5,
         }
         for pr_strategy in ["combine"]
         for n_q in n_q_list
     ]
     for params in exp_pr_strategy_ddp:
-        run_experiment(**params)
+        run_experiment("fedcurve", **params)
 
     # create plots
-    _, pr = read_csv(dataset, classifier)
+    _, pr = read_csv("fedcurve", dataset, classifier)
     df = pr[pr["interp"] == "pchip"]
 
     fig, ax = plt.subplots(figsize=figsize)
 
     ax.plot(n_q_list, 1 / n_q_list, "k:", label="1/Q")
-    # ax.plot(n_q_list, 1 / n_q_list**2, "y:", label="1/Q^2")
 
     df_sa = df[df["privacy"] == "SA"]
     df_ddp = df[df["privacy"] == "DDP"]
@@ -253,7 +288,6 @@ def main(dataset, classifier, n_q_list):
             label=f"SA, {pr_strategy}",
         )
 
-        epsilon = 1
         df_ddp_pr = df_ddp[
             (df_ddp["pr_strategy"] == pr_strategy) & (df_ddp["epsilon"] == epsilon)
         ]
@@ -284,6 +318,99 @@ def main(dataset, classifier, n_q_list):
     plt.close(fig)
 
 
+def run_dpecdf(dataset, classifier, n_p_list, epsilon, figsize):
+    n_p_list = np.asarray(n_p_list)
+
+    exp_dp = [
+        {
+            "curve": curve,
+            "dataset": dataset,
+            "classifier": classifier,
+            "epsilon": epsilon,
+            "n_p": n_p,
+            "norm": norm,
+            "n_reps": 5,
+        }
+        for curve in ["ROC", "PR"]
+        for n_p in n_p_list
+        for norm in [1, 2]
+    ]
+    for params in exp_dp:
+        run_experiment("dpecdf", **params)
+
+    # create plots
+    range_roc, range_pr = read_csv("dpecdf", dataset, classifier)
+    quantile_roc, quantile_pr = read_csv("fedcurve", dataset, classifier)
+
+    quantile_roc = quantile_roc[quantile_roc["interp"] == "pchip"]
+    quantile_pr = quantile_pr[
+        (quantile_pr["pr_strategy"] == "separate") & (quantile_pr["interp"] == "pchip")
+    ]
+
+    for curve in ["ROC", "PR"]:
+        range_df, quantile_df = (
+            (range_roc, quantile_roc) if curve == "ROC" else (range_pr, quantile_pr)
+        )
+
+        fig, ax = plt.subplots(figsize=figsize)
+
+        ax.plot(n_p_list, 1 / n_p_list, "k:", label="1/Q")
+
+        range_df_ddp = range_df[(range_df["epsilon"] == epsilon)]
+        quantile_df_ddp = quantile_df[(quantile_df["epsilon"] == epsilon)]
+
+        range_ae_mean_norm1, range_ae_var_norm1 = [], []
+        range_ae_mean_norm2, range_ae_var_norm2 = [], []
+        quantile_ae_mean, quantile_ae_var = [], []
+        for n_q in n_q_list:
+            range_df_q = range_df_ddp[range_df_ddp["n_p"] == n_q]
+            range_df_q_norm1 = range_df_q[range_df_q["norm"] == 1]
+            range_df_q_norm2 = range_df_q[range_df_q["norm"] == 2]
+
+            range_ae_mean_norm1.append(range_df_q_norm1["area_error"].mean())
+            range_ae_var_norm1.append(range_df_q_norm1["area_error"].var())
+            range_ae_mean_norm2.append(range_df_q_norm2["area_error"].mean())
+            range_ae_var_norm2.append(range_df_q_norm2["area_error"].var())
+
+            quantile_df_q = quantile_df_ddp[quantile_df_ddp["n_q"] == n_q]
+            quantile_ae_mean.append(quantile_df_q["area_error"].mean())
+            quantile_ae_var.append(quantile_df_q["area_error"].var())
+
+        ax.errorbar(
+            n_q_list,
+            range_ae_mean_norm1,
+            yerr=range_ae_var_norm1,
+            fmt="o-",
+            label=rf"Range ($l_1$ norm) $\epsilon$={epsilon}",
+        )
+        ax.errorbar(
+            n_q_list,
+            range_ae_mean_norm2,
+            yerr=range_ae_var_norm2,
+            fmt="o-",
+            label=rf"Range ($l_2$ norm) $\epsilon$={epsilon}",
+        )
+        ax.errorbar(
+            n_q_list,
+            quantile_ae_mean,
+            yerr=quantile_ae_var,
+            fmt="o-",
+            label=rf"Quantile $\epsilon$={epsilon}",
+        )
+
+        ax.set_xlabel("Q(N)")
+        ax.set_ylabel("Area Error")
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.legend()
+        ax.grid()
+        img_path = Path(f"./img/range/{dataset}_{classifier}_{curve}.pdf")
+        if not img_path.parent.exists():
+            img_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(img_path)
+        plt.close(fig)
+
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Reproduce the results of the experiment.")
     parser.add_argument(
@@ -299,10 +426,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.dataset in ["adult", "bank"]:
-        n_q_list = np.array([5, 7, 10, 14, 19, 26, 37, 51, 72, 100])
+        epsilon = 1.0
+        n_q_list = [2**i for i in range(2, 8)]
     else:  # ["cover", "sep", "oct", "nov"]
-        n_q_list = np.array(
-            [5, 7, 10, 14, 19, 26, 37, 51, 72, 100, 136, 190, 264, 368, 514, 717, 1000]
-        )
+        epsilon = 0.3
+        n_q_list = [2**i for i in range(2, 11)]
 
-    main(args.dataset, args.classifier, n_q_list)
+    figsize = (5, 5)
+    run_fedcurve(args.dataset, args.classifier, n_q_list, epsilon, figsize)
+    run_dpecdf(args.dataset, args.classifier, n_q_list, epsilon, figsize)

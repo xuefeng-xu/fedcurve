@@ -3,7 +3,7 @@ import numpy as np
 
 def IID_partitioner(y_true, y_score, n_clients):
     if len(y_true) != len(y_score):
-        raise ValueError("y_true and y_score must have the same length")
+        raise RuntimeError("y_true and y_score must have the same length")
 
     if n_clients == 1:
         return [(y_true, y_score)]

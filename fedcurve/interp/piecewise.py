@@ -3,15 +3,11 @@ from scipy.interpolate import PchipInterpolator
 
 
 class _piecewise:
-    # Assumptions:
-    # x is in the range [0, 1] and monotonic increasing
-    # y is in the range [0, 1] and monotonic decreasing
+    def __init__(self, x, y, interp, y_order):
+        self.y_order = y_order
 
-    def __init__(self, x, y, interp):
         if interp == "pchip":
             self.base_interp = PchipInterpolator
-        else:
-            raise ValueError(f"Unknown interp: {interp}")
 
         self.xmin, self.xmax = min(x), max(x)
         self._segment_fit(x, y)
@@ -55,14 +51,16 @@ class _piecewise:
 
     def __call__(self, x):
         x = np.asarray(x)
+        idx_left = x < self.xmin
+        idx_right = x >= self.xmax
+
         y = np.zeros_like(x)
+        if self.y_order == "desc":
+            y[idx_left] = 1.0
+        else:  # "aes"
+            y[idx_right] = 1.0
 
-        idx_1 = x < self.xmin
-        idx_0 = x >= self.xmax
-        y[idx_1] = 1.0
-        # y[idx_0] = 0.0
-
-        idx = np.logical_and(~idx_1, ~idx_0)
+        idx = np.logical_and(~idx_left, ~idx_right)
         if np.any(idx) > 0:
             y[idx] = self._evaluate(x[idx])
 

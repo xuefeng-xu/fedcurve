@@ -173,7 +173,11 @@ cython_debug/
 .DS_Store
 
 dataset/*
+
 result/*
+fedcurve/result/*
+dpecdf/recult/*
+
 img/*
 
 test/*
