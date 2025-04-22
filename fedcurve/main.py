@@ -20,7 +20,7 @@ from fedcurve.error import area_error_roc, area_error_pr
 
 
 def save_results(args, area_error):
-    file = Path(f"result/fedcurve/{args.dataset}_{args.classifier}_{args.curve}.txt")
+    file = Path(f"./result/fedcurve/{args.dataset}_{args.classifier}_{args.curve}.txt")
 
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)

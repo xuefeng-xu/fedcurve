@@ -35,7 +35,7 @@ See [fedcurve/README](./fedcurve/README.md) for details.
 To reproduce results for the `adult` dataset with `XGBClassifier`:
 
 ```bash
-python reprod.py --dataset adult --classifier XGBClassifier
+python reproduce.py --dataset adult --classifier XGBClassifier
 ```
 
 Plots are saved under `./img/*/{dataset}_{classifier}_{curve}.pdf`
