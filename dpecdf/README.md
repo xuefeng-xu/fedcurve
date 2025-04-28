@@ -17,7 +17,7 @@ Results are saved under `./result/dpecdf/{dataset}_{classifier}_{curve}.txt`
 | Parameter | Description | Values |
 |---|---|---|
 | `curve` | Curve name | `ROC` or `PR` |
-| `dataset` | Dataset name | [`adult`](https://archive.ics.uci.edu/dataset/2/adult), [`bank`](https://archive.ics.uci.edu/dataset/222/bank+marketing), [`cover`](https://archive.ics.uci.edu/dataset/31/covertype), [`sep`](https://www.kaggle.com/competitions/tabular-playground-series-sep-2021), [`oct`](https://www.kaggle.com/competitions/tabular-playground-series-oct-2021), [`nov`](https://www.kaggle.com/competitions/tabular-playground-series-nov-2021) |
+| `dataset` | Dataset name | [`adult`](https://archive.ics.uci.edu/dataset/2/adult), [`bank`](https://archive.ics.uci.edu/dataset/222/bank+marketing), [`cover`](https://archive.ics.uci.edu/dataset/31/covertype), [`dota2`](https://archive.ics.uci.edu/dataset/367/dota2+games+results) |
 | `classifier` | Classifier name | `XGBClassifier`, `LogisticRegression`, etc. |
 | `epsilon` | Privacy budget | Float (e.g., `1.0`, `0.5`) |
 | `norm` | Norm for smoothing | `1` or `2` |

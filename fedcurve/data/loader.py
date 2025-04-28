@@ -1,12 +1,10 @@
 import zipfile
 import gzip
 import shutil
-import subprocess
 from pandas import read_csv
 from pathlib import Path
 from urllib.request import urlretrieve
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
 
 
 def download(url, zip_file):
@@ -113,59 +111,24 @@ def load_cover(dataset_dir):
     return X, y
 
 
-def load_kaggle(dataset_dir, tag):
-    file = dataset_dir / "train.csv"
+def load_dota2(dataset_dir):
+    file = dataset_dir / "dota2Train.csv"
 
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)
-        zip_file = file.parent / f"tabular-playground-series-{tag}-2021.zip"
+        zip_file = file.parent / "dota2+games+results.zip"
 
-        cmd = [
-            "kaggle",
-            "competitions",
-            "download",
-            "-c",
-            f"tabular-playground-series-{tag}-2021",
-            "-p",
+        download_and_extract(
+            "https://archive.ics.uci.edu/static/public/367/dota2+games+results.zip",
+            zip_file,
             file.parent,
-        ]
-        try:
-            result = subprocess.run(cmd, check=True)
-            print(result.stdout)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to download dataset: {e.stderr}") from e
+        )
 
-        extract(zip_file, file.parent)
+    X = read_csv(file, header=None)
 
-    return read_csv(file)
+    y = X.pop(0).map({1: 1, -1: 0})
 
-
-def load_sep(dataset_dir):
-    X = load_kaggle(dataset_dir, "sep")
-
-    X.pop("id")
-    y = X.pop("claim")
-
-    X = SimpleImputer().fit_transform(X)
     X = StandardScaler().fit_transform(X)
-
-    return X, y
-
-
-def load_oct(dataset_dir):
-    X = load_kaggle(dataset_dir, "oct")
-
-    X.pop("id")
-    y = X.pop("target")
-
-    return X, y
-
-
-def load_nov(dataset_dir):
-    X = load_kaggle(dataset_dir, "nov")
-
-    X.pop("id")
-    y = X.pop("target")
 
     return X, y
 
@@ -178,9 +141,7 @@ def load_data(dataset):
         "adult": lambda: load_adult(dataset_dir),
         "bank": lambda: load_bank(dataset_dir),
         "cover": lambda: load_cover(dataset_dir),
-        "sep": lambda: load_sep(dataset_dir),
-        "oct": lambda: load_oct(dataset_dir),
-        "nov": lambda: load_nov(dataset_dir),
+        "dota2": lambda: load_dota2(dataset_dir),
     }
 
     if dataset not in datasets:

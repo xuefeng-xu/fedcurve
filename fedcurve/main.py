@@ -54,7 +54,7 @@ def get_common_parser():
         "--dataset",
         type=str,
         default="adult",
-        choices=["adult", "bank", "cover", "sep", "oct", "nov"],
+        choices=["adult", "bank", "cover", "dota2"],
         help="Dataset name",
     )
     parser.add_argument(

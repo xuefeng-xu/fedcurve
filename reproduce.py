@@ -122,6 +122,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
         img_path = Path(f"./img/interp/{dataset}_{classifier}_{curve}.pdf")
         if not img_path.parent.exists():
             img_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.tight_layout()
         fig.savefig(img_path)
         plt.close(fig)
 
@@ -224,6 +225,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
         img_path = Path(f"./img/epsilon/{dataset}_{classifier}_{curve}.pdf")
         if not img_path.parent.exists():
             img_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.tight_layout()
         fig.savefig(img_path)
         plt.close(fig)
 
@@ -314,6 +316,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
     img_path = Path(f"./img/pr_strategy/{dataset}_{classifier}_PR.pdf")
     if not img_path.parent.exists():
         img_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
     fig.savefig(img_path)
     plt.close(fig)
 
@@ -407,6 +410,7 @@ def run_dpecdf(dataset, classifier, n_p_list, epsilon, figsize):
         img_path = Path(f"./img/range/{dataset}_{classifier}_{curve}.pdf")
         if not img_path.parent.exists():
             img_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.tight_layout()
         fig.savefig(img_path)
         plt.close(fig)
 
@@ -417,7 +421,7 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="adult",
-        choices=["adult", "bank", "cover", "sep", "oct", "nov"],
+        choices=["adult", "bank", "cover", "dota2"],
         help="Dataset name",
     )
     parser.add_argument(
@@ -425,12 +429,12 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    n_q_list = [2**i for i in range(2, 11)]
+
     if args.dataset in ["adult", "bank"]:
         epsilon = 1.0
-        n_q_list = [2**i for i in range(2, 8)]
-    else:  # ["cover", "sep", "oct", "nov"]
+    else:  # ["cover", "dota2"]
         epsilon = 0.3
-        n_q_list = [2**i for i in range(2, 11)]
 
     figsize = (5, 5)
     run_fedcurve(args.dataset, args.classifier, n_q_list, epsilon, figsize)
