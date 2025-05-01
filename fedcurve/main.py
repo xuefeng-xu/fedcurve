@@ -137,13 +137,16 @@ def main():
             y_true, y_score
         )
 
+    q_frac = np.linspace(0, 1, args.n_q)
+
     for _ in range(args.n_reps):
         if args.privacy == "EQ":
-            # Compute the exact quantiles
-            q_frac = np.linspace(0, 1, args.n_q)
-
+            # Split the positive and negative examples
             pos_idx = y_true == 1
             y_score_pos = y_score[pos_idx]
+            y_score_neg = y_score[~pos_idx]
+
+            # Compute the Exact Quantiles (EQ)
             n_pos = len(y_score_pos)
             q_pos = np.quantile(y_score_pos, q_frac)
 
@@ -151,7 +154,6 @@ def main():
                 n_all = len(y_score)
                 q_all = np.quantile(y_score, q_frac)
             else:  # args.pr_strategy in ["separate", "none"]
-                y_score_neg = y_score[~pos_idx]
                 n_neg = len(y_score_neg)
                 q_neg = np.quantile(y_score_neg, q_frac)
 
@@ -170,15 +172,15 @@ def main():
             )
 
             # Compute the quantiles
-            q_pos = hier_hist_pos.n_quantile(args.n_q)
+            q_pos = hier_hist_pos.n_quantile(q_frac)
             n_pos = hier_hist_pos.N
 
             if args.pr_strategy == "combine":
                 hier_hist = hier_hist_pos.merge(hier_hist_neg)
-                q_all = hier_hist.n_quantile(args.n_q)
+                q_all = hier_hist.n_quantile(q_frac)
                 n_all = hier_hist.N
             else:  # args.pr_strategy in ["separate", "none"]
-                q_neg = hier_hist_neg.n_quantile(args.n_q)
+                q_neg = hier_hist_neg.n_quantile(q_frac)
                 n_neg = hier_hist_neg.N
 
         # Compute the area error

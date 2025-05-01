@@ -17,18 +17,19 @@ def _check(x, y, y_order):
     if max(y) > 1.0 or min(y) < 0.0:
         raise ValueError(f"y must be in the range [0, 1]")
 
-    if not np.all(np.diff(x) >= 0):
-        raise ValueError(f"x must be ascending")
-
     if y_order not in ["asc", "desc"]:
         raise ValueError(f"Unknown y_order: {y_order}")
 
-    if y_order == "asc":
-        if not np.all(np.diff(y) >= 0):
-            raise ValueError(f"y must be ascending")
-    else:  # "desc"
-        if not np.all(np.diff(y) <= 0):
-            raise ValueError(f"y must be descending")
+    idx = np.argsort(x, kind="mergesort")
+    x = x[idx]
+    y = y[idx]
+
+    if y_order == "asc" and not np.all(np.diff(y) >= 0):
+        raise ValueError(f"y must be ascending")
+    elif y_order == "desc" and not np.all(np.diff(y) <= 0):
+        raise ValueError(f"y must be descending")
+
+    return x, y
 
 
 def _midpoint(x, y, y_order):
@@ -57,8 +58,8 @@ def _linear(x, y, y_order):
     return interp1d(x, y, kind="linear", bounds_error=False, fill_value=fill_value)
 
 
-def piecewise_interp(x, y, interp, y_order="desc"):
-    _check(x, y, y_order)
+def piecewise_interp(x, y, interp="pchip", y_order="desc"):
+    x, y = _check(x, y, y_order)
 
     if interp == "midpoint":
         return _midpoint(x, y, y_order)

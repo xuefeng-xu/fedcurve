@@ -41,8 +41,9 @@ class HierarchicalHistogram:
 
         return lb
 
-    def n_quantile(self, n_q):
-        return [self.quantile(q_frac) for q_frac in np.linspace(0, 1, n_q)]
+    def n_quantile(self, q_list):
+        q_list = np.asarray(q_list)
+        return np.asarray([self.quantile(q_frac) for q_frac in q_list])
 
     def merge(self, other: "HierarchicalHistogram"):
         if self.height != other.height:
@@ -50,8 +51,7 @@ class HierarchicalHistogram:
         if self.branch != other.branch:
             raise RuntimeError("Hierarchical histograms must have the same branch")
 
-        self.N += other.N
-        self.data = [
+        merged_data = [
             np.asarray(h1) + np.asarray(h2) for h1, h2 in zip(self.data, other.data)
         ]
-        return self
+        return HierarchicalHistogram(merged_data)
