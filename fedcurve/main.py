@@ -26,14 +26,14 @@ def save_results(args, area_error):
         file.parent.mkdir(parents=True, exist_ok=True)
         with file.open("w") as f:
             f.write(
-                "area_error,n_clients,privacy,epsilon,"
+                "area_error,ratio,n_clients,privacy,epsilon,"
                 "noise_type,post_processing,n_q,"
                 "pr_strategy,height,branch,interp\n"
             )
 
     with file.open("a") as f:
         f.write(
-            f"{area_error},{args.n_clients},{args.privacy},{args.epsilon},"
+            f"{area_error},{args.ratio},{args.n_clients},{args.privacy},{args.epsilon},"
             f"{args.noise_type},{args.post_processing},{args.n_q},"
             f"{args.pr_strategy},{args.height},{args.branch},{args.interp}\n"
         )
@@ -54,8 +54,13 @@ def get_common_parser():
         "--dataset",
         type=str,
         default="adult",
-        choices=["adult", "bank", "cover", "dota2"],
         help="Dataset name",
+    )
+    parser.add_argument(
+        "--ratio",
+        type=float,
+        default=np.nan,
+        help="Positive-to-negative ratio",
     )
     parser.add_argument(
         "--classifier", type=str, default="XGBClassifier", help="Classifier name"
@@ -127,7 +132,7 @@ def main():
         args.pr_strategy = "none"
 
     # Load y_true and y_score
-    y_true, y_score = load_label_and_score(args.dataset, args.classifier)
+    y_true, y_score = load_label_and_score(args.dataset, args.classifier, args.ratio)
 
     # To compute point errors, set drop_intermediate=False
     if args.curve == "ROC":

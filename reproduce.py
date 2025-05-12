@@ -76,7 +76,8 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
 
     # create plots
     roc, pr = read_csv("fedcurve", dataset, classifier)
-    pr = pr[pr["pr_strategy"] == "separate"]
+    roc = roc[roc["ratio"].isna()]
+    pr = pr[(pr["pr_strategy"] == "separate") & pr["ratio"].isna()]
 
     for curve in ["ROC", "PR"]:
         df = roc if curve == "ROC" else pr
@@ -174,8 +175,12 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
 
     # create plots
     roc, pr = read_csv("fedcurve", dataset, classifier)
-    roc = roc[roc["interp"] == "pchip"]
-    pr = pr[(pr["pr_strategy"] == "separate") & (pr["interp"] == "pchip")]
+    roc = roc[(roc["interp"] == "pchip") & roc["ratio"].isna()]
+    pr = pr[
+        (pr["pr_strategy"] == "separate")
+        & (pr["interp"] == "pchip")
+        & pr["ratio"].isna()
+    ]
 
     for curve in ["ROC", "PR"]:
         df = roc if curve == "ROC" else pr
@@ -272,7 +277,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
 
     # create plots
     _, pr = read_csv("fedcurve", dataset, classifier)
-    df = pr[pr["interp"] == "pchip"]
+    df = pr[(pr["interp"] == "pchip") & pr["ratio"].isna()]
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -345,9 +350,16 @@ def run_dpecdf(dataset, classifier, n_p_list, epsilon, figsize):
     range_roc, range_pr = read_csv("dpecdf", dataset, classifier)
     quantile_roc, quantile_pr = read_csv("fedcurve", dataset, classifier)
 
-    quantile_roc = quantile_roc[quantile_roc["interp"] == "pchip"]
+    range_roc = range_roc[range_roc["ratio"].isna()]
+    range_pr = range_pr[range_pr["ratio"].isna()]
+
+    quantile_roc = quantile_roc[
+        (quantile_roc["interp"] == "pchip") & quantile_roc["ratio"].isna()
+    ]
     quantile_pr = quantile_pr[
-        (quantile_pr["pr_strategy"] == "separate") & (quantile_pr["interp"] == "pchip")
+        (quantile_pr["pr_strategy"] == "separate")
+        & (quantile_pr["interp"] == "pchip")
+        & quantile_pr["ratio"].isna()
     ]
 
     for curve in ["ROC", "PR"]:
@@ -415,13 +427,67 @@ def run_dpecdf(dataset, classifier, n_p_list, epsilon, figsize):
         plt.close(fig)
 
 
+def run_imb_ratio(dataset, classifier, n_q_list, ratio_list, figsize):
+    exp_eq = [
+        {
+            "curve": "PR",
+            "dataset": dataset,
+            "ratio": ratio,
+            "classifier": classifier,
+            "privacy": "EQ",
+            "n_q": n_q,
+            "pr_strategy": "separate",
+            "interp": "pchip",
+            "n_reps": 5,
+        }
+        for ratio in ratio_list
+        for n_q in n_q_list
+    ]
+    for params in exp_eq:
+        run_experiment("fedcurve", **params)
+
+    # create plots
+    _, df = read_csv("fedcurve", dataset, classifier)
+    df = df[(df["privacy"] == "EQ") & df["ratio"].notna()]
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for ratio in ratio_list:
+        df_ratio = df[df["ratio"] == ratio]
+        ae_mean, ae_var = [], []
+        for n_q in n_q_list:
+            df_q = df_ratio[df_ratio["n_q"] == n_q]
+            ae_mean.append(df_q["area_error"].mean())
+            ae_var.append(df_q["area_error"].var())
+
+        ax.errorbar(
+            n_q_list,
+            ae_mean,
+            yerr=ae_var,
+            fmt="o-",
+            label=f"r={ratio}",
+        )
+
+    ax.set_xlabel("Q")
+    ax.set_ylabel("Area Error")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend()
+    ax.grid()
+    img_path = Path(f"./img/ratio/{dataset}_{classifier}_PR.pdf")
+    if not img_path.parent.exists():
+        img_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(img_path)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Reproduce the results of the experiment.")
     parser.add_argument(
         "--dataset",
         type=str,
         default="adult",
-        choices=["adult", "bank", "cover", "dota2"],
         help="Dataset name",
     )
     parser.add_argument(
@@ -430,12 +496,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     n_q_list = [2**i for i in range(2, 11)]
+    ratio_list = [0.1, 0.05, 0.01]
 
-    if args.dataset in ["adult", "bank"]:
-        epsilon = 1.0
-    else:  # ["cover", "dota2"]
+    if args.dataset in ["cover", "dota2"]:
         epsilon = 0.3
+    else:
+        epsilon = 1.0
 
     figsize = (5, 5)
     run_fedcurve(args.dataset, args.classifier, n_q_list, epsilon, figsize)
     run_dpecdf(args.dataset, args.classifier, n_q_list, epsilon, figsize)
+    run_imb_ratio(args.dataset, args.classifier, n_q_list, ratio_list, figsize)

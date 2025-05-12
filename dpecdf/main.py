@@ -23,10 +23,10 @@ def save_results(args, area_error):
     if not file.exists():
         file.parent.mkdir(parents=True, exist_ok=True)
         with file.open("w") as f:
-            f.write("area_error,epsilon,n_p,norm\n")
+            f.write("area_error,ratio,epsilon,n_p,norm\n")
 
     with file.open("a") as f:
-        f.write(f"{area_error},{args.epsilon},{args.n_p},{args.norm}\n")
+        f.write(f"{area_error},{args.ratio},{args.epsilon},{args.n_p},{args.norm}\n")
 
 
 def parse_arguments():
@@ -41,7 +41,7 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    y_true, y_score = load_label_and_score(args.dataset, args.classifier)
+    y_true, y_score = load_label_and_score(args.dataset, args.classifier, args.ratio)
 
     # To compute point errors, set drop_intermediate=False
     if args.curve == "ROC":

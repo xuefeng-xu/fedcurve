@@ -5,20 +5,24 @@ from .classifier import predict_proba
 from .hist import fedhist_client, fedhist_server, HierarchicalHistogram
 
 
-def load_label_and_score(dataset, classifier):
+def load_label_and_score(dataset, classifier, ratio):
     # Use absolute path to avoid issues with relative paths
     PROJECT_ROOT = Path(__file__).parent.parent
     y_file = PROJECT_ROOT / f"dataset/{dataset}/clf/{classifier}.npz"
 
-    if y_file.exists():
+    not_make_imb = np.isnan(ratio)
+
+    if y_file.exists() and not_make_imb:
         # Use cached y_true and y_score
         y_data = np.load(y_file)
         y_true, y_score = y_data["y_true"], y_data["y_score"]
     else:
-        X, y_true = load_data(dataset)
+        X, y_true = load_data(dataset, ratio)
         y_score = predict_proba(X, y_true, classifier)
-        y_file.parent.mkdir(parents=True, exist_ok=True)
-        np.savez(y_file, y_true=y_true, y_score=y_score)
+
+        if not_make_imb:
+            y_file.parent.mkdir(parents=True, exist_ok=True)
+            np.savez(y_file, y_true=y_true, y_score=y_score)
     return y_true, y_score
 
 

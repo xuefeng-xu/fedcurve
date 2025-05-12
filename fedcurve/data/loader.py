@@ -1,10 +1,12 @@
 import zipfile
 import gzip
 import shutil
+import numpy as np
 from pandas import read_csv
 from pathlib import Path
 from urllib.request import urlretrieve
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from imblearn.datasets import fetch_datasets, make_imbalance
 
 
 def download(url, zip_file):
@@ -133,18 +135,40 @@ def load_dota2(dataset_dir):
     return X, y
 
 
-def load_data(dataset):
+def load_imblearn_data(dataset_dir, dataset):
+    dataobj = fetch_datasets(data_home=dataset_dir)[dataset]
+
+    X = dataobj.data
+
+    y = dataobj.target
+    y[y == -1] = 0
+
+    X = StandardScaler().fit_transform(X)
+
+    return X, y
+
+
+def load_data(dataset, ratio=np.nan):
     PROJECT_ROOT = Path(__file__).parent.parent.parent
     dataset_dir = PROJECT_ROOT / f"dataset/{dataset}"
 
-    datasets = {
+    uci_data = {
         "adult": lambda: load_adult(dataset_dir),
         "bank": lambda: load_bank(dataset_dir),
         "cover": lambda: load_cover(dataset_dir),
         "dota2": lambda: load_dota2(dataset_dir),
     }
 
-    if dataset not in datasets:
-        raise ValueError(f"Unknown dataset: {dataset}")
+    if dataset in uci_data:
+        X, y = uci_data[dataset]()
+    else:
+        X, y = load_imblearn_data(dataset_dir.parent.stem, dataset)
 
-    return datasets[dataset]()
+    if not np.isnan(ratio):
+        n_neg = sum(y == 0)
+        n_pos = round(n_neg * ratio)
+        if n_pos < 1:
+            raise ValueError(f"Ratio {ratio} is too small for the dataset {dataset}")
+        X, y = make_imbalance(X, y, sampling_strategy={1: n_pos})
+
+    return X, y

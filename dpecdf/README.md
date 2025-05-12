@@ -17,8 +17,9 @@ Results are saved under `./result/dpecdf/{dataset}_{classifier}_{curve}.txt`
 | Parameter | Description | Values |
 |---|---|---|
 | `curve` | Curve name | `ROC` or `PR` |
-| `dataset` | Dataset name | [`adult`](https://archive.ics.uci.edu/dataset/2/adult), [`bank`](https://archive.ics.uci.edu/dataset/222/bank+marketing), [`cover`](https://archive.ics.uci.edu/dataset/31/covertype), [`dota2`](https://archive.ics.uci.edu/dataset/367/dota2+games+results) |
+| `dataset` | Dataset name | [`adult`](https://archive.ics.uci.edu/dataset/2/adult), [`bank`](https://archive.ics.uci.edu/dataset/222/bank+marketing), [`cover`](https://archive.ics.uci.edu/dataset/31/covertype), [`dota2`](https://archive.ics.uci.edu/dataset/367/dota2+games+results), or datasets from [imbalanced-learn](https://imbalanced-learn.org/stable/references/generated/imblearn.datasets.fetch_datasets.html) |
 | `classifier` | Classifier name | `XGBClassifier`, `LogisticRegression`, etc. |
+| `ratio` | Ratio of positive to negative examples | Float (e.g., `0.1`, `0.5`) |
 | `epsilon` | Privacy budget | Float (e.g., `1.0`, `0.5`) |
 | `norm` | Norm for smoothing | `1` or `2` |
 | `n_reps` | Number of repetitions | Integer (e.g., `1`, `3`) |
