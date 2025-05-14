@@ -94,7 +94,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
                 df_sa_interp["n_q"],
                 df_sa_interp["area_error"],
                 "o--",
-                label=f"SA, {interp}",
+                label=f"SA, {interp.capitalize() if interp == 'linear' else interp.upper()}",
             )
 
             df_ddp_interp = df_ddp[
@@ -111,7 +111,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
                 ae_mean,
                 yerr=ae_var,
                 fmt="o-",
-                label=rf"DDP $\epsilon$={epsilon}, {interp}",
+                label=rf"DDP $\epsilon$={epsilon}, {interp.capitalize() if interp == 'linear' else interp.upper()}",
             )
 
         ax.set_xlabel("Q")
@@ -292,7 +292,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
             df_sa_pr["n_q"],
             df_sa_pr["area_error"],
             "o--",
-            label=f"SA, {pr_strategy}",
+            label=f"SA, {pr_strategy.capitalize()}",
         )
 
         df_ddp_pr = df_ddp[
@@ -309,7 +309,7 @@ def run_fedcurve(dataset, classifier, n_q_list, epsilon, figsize):
             ae_mean,
             yerr=ae_var,
             fmt="o-",
-            label=rf"DDP $\epsilon$={epsilon}, {pr_strategy}",
+            label=rf"DDP $\epsilon$={epsilon}, {pr_strategy.capitalize()}",
         )
 
     ax.set_xlabel("Q")
@@ -428,13 +428,13 @@ def run_dpecdf(dataset, classifier, n_p_list, epsilon, figsize):
 
 
 def run_imb_ratio(dataset, classifier, n_q_list, ratio_list, figsize):
-    exp_eq = [
+    exp_sa = [
         {
             "curve": "PR",
             "dataset": dataset,
             "ratio": ratio,
             "classifier": classifier,
-            "privacy": "EQ",
+            "privacy": "SA",
             "n_q": n_q,
             "pr_strategy": "separate",
             "interp": "pchip",
@@ -443,12 +443,12 @@ def run_imb_ratio(dataset, classifier, n_q_list, ratio_list, figsize):
         for ratio in ratio_list
         for n_q in n_q_list
     ]
-    for params in exp_eq:
+    for params in exp_sa:
         run_experiment("fedcurve", **params)
 
     # create plots
     _, df = read_csv("fedcurve", dataset, classifier)
-    df = df[(df["privacy"] == "EQ") & df["ratio"].notna()]
+    df = df[(df["privacy"] == "SA") & df["ratio"].notna()]
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -496,7 +496,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     n_q_list = [2**i for i in range(2, 11)]
-    ratio_list = [0.1, 0.05, 0.01]
+    ratio_list = [0.01, 0.05, 0.1]
 
     if args.dataset in ["cover", "dota2"]:
         epsilon = 0.3
