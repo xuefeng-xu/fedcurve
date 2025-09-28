@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.utils import check_random_state
 
 
 def calc_il_to_rv(N, L):
@@ -35,7 +36,7 @@ class rv_index:
         (self.il_to_rv, self.rv_cnt) = calc_il_to_rv(self.N, self.L)
 
 
-def generate_noise(epsilon, rvidx):
+def generate_noise(epsilon, rvidx, rng=None):
     # Reference: https://gitlab.inria.fr/abarczew/ab_technical/-/blob/b957b869ab8024e003cd0fc69a356309429dd7be/medical-statistics-and-privacy/dp-cum/code/2024/utils/dp_counter.py#L4-26
     """
     generate DP noise
@@ -50,7 +51,8 @@ def generate_noise(epsilon, rvidx):
     rv_cnt = rvidx.rv_cnt
     N = rvidx.N
     L = rvidx.L
-    eta = np.random.laplace(0, 1 / epsilon, size=rv_cnt)
+    rng = check_random_state(rng)
+    eta = rng.laplace(0, 1 / epsilon, size=rv_cnt)
     sum_eta = np.zeros(N)
     for i in range(N):
         for j in range(L):

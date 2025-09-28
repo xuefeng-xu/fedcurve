@@ -5,7 +5,7 @@ from .classifier import predict_proba
 from .hist import fedhist_client, fedhist_server, HierarchicalHistogram
 
 
-def load_label_and_score(dataset, classifier, ratio):
+def load_label_and_score(dataset, classifier, ratio, rng=None):
     # Use absolute path to avoid issues with relative paths
     PROJECT_ROOT = Path(__file__).parent.parent
     y_file = PROJECT_ROOT / f"dataset/{dataset}/clf/{classifier}.npz"
@@ -17,7 +17,7 @@ def load_label_and_score(dataset, classifier, ratio):
         y_data = np.load(y_file)
         y_true, y_score = y_data["y_true"], y_data["y_score"]
     else:
-        X, y_true = load_data(dataset, ratio)
+        X, y_true = load_data(dataset, ratio, rng)
         y_score = predict_proba(X, y_true, classifier)
 
         if not_make_imb:
@@ -36,9 +36,10 @@ def fed_simulation(
     epsilon,
     noise_type,
     post_processing,
+    rng=None,
 ):
     # clients partioning
-    y_clients = IID_partitioner(y_true, y_score, n_clients)
+    y_clients = IID_partitioner(y_true, y_score, n_clients, rng)
 
     # Split positive and negative data
     hist_pos_client, hist_neg_client = [], []
@@ -56,6 +57,7 @@ def fed_simulation(
                 epsilon,
                 n_clients,
                 noise_type,
+                rng=rng,
             )
         )
 
@@ -68,6 +70,7 @@ def fed_simulation(
                 epsilon,
                 n_clients,
                 noise_type,
+                rng=rng+1000,
             )
         )
 

@@ -1,10 +1,3 @@
-import sys
-from pathlib import Path
-
-# Add the parent directory to the system path
-parent_dir = Path(__file__).parent.parent
-sys.path.append(str(parent_dir))
-
 import math
 import numpy as np
 from pathlib import Path
@@ -132,7 +125,7 @@ def main():
         args.pr_strategy = "none"
 
     # Load y_true and y_score
-    y_true, y_score = load_label_and_score(args.dataset, args.classifier, args.ratio)
+    y_true, y_score = load_label_and_score(args.dataset, args.classifier, args.ratio, rng=0)
 
     # To compute point errors, set drop_intermediate=False
     if args.curve == "ROC":
@@ -144,7 +137,7 @@ def main():
 
     q_frac = np.linspace(0, 1, args.n_q)
 
-    for _ in range(args.n_reps):
+    for i in range(args.n_reps):
         if args.privacy == "EQ":
             # Split the positive and negative examples
             pos_idx = y_true == 1
@@ -174,6 +167,7 @@ def main():
                 args.epsilon,
                 args.noise_type,
                 args.post_processing,
+                rng=i,
             )
 
             # Compute the quantiles

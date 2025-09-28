@@ -148,7 +148,7 @@ def load_imblearn_data(dataset_dir, dataset):
     return X, y
 
 
-def load_data(dataset, ratio=np.nan):
+def load_data(dataset, ratio=np.nan, rng=None):
     PROJECT_ROOT = Path(__file__).parent.parent.parent
     dataset_dir = PROJECT_ROOT / f"dataset/{dataset}"
 
@@ -169,6 +169,6 @@ def load_data(dataset, ratio=np.nan):
         n_pos = round(n_neg * ratio)
         if n_pos < 1:
             raise ValueError(f"Ratio {ratio} is too small for the dataset {dataset}")
-        X, y = make_imbalance(X, y, sampling_strategy={1: n_pos})
+        X, y = make_imbalance(X, y, sampling_strategy={1: n_pos}, random_state=rng)
 
     return X, y

@@ -1,7 +1,8 @@
 import numpy as np
+from sklearn.utils import check_random_state
 
 
-def IID_partitioner(y_true, y_score, n_clients):
+def IID_partitioner(y_true, y_score, n_clients, rng=None):
     if len(y_true) != len(y_score):
         raise RuntimeError("y_true and y_score must have the same length")
 
@@ -9,7 +10,8 @@ def IID_partitioner(y_true, y_score, n_clients):
         return [(y_true, y_score)]
 
     # Shuffle
-    permuted_indices = np.random.permutation(len(y_true))
+    rng = check_random_state(rng)
+    permuted_indices = rng.permutation(len(y_true))
     y_true, y_score = y_true[permuted_indices], y_score[permuted_indices]
 
     # Split into approximately equal parts

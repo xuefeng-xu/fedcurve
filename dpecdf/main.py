@@ -1,11 +1,5 @@
-import sys
-from pathlib import Path
-
-# Add the parent directory to the system path
-parent_dir = Path(__file__).parent.parent
-sys.path.append(str(parent_dir))
-
 import numpy as np
+from pathlib import Path
 from scipy.interpolate import interp1d
 from functools import partial
 from sklearn.metrics import roc_curve, precision_recall_curve
@@ -41,7 +35,7 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    y_true, y_score = load_label_and_score(args.dataset, args.classifier, args.ratio)
+    y_true, y_score = load_label_and_score(args.dataset, args.classifier, args.ratio, rng=0)
 
     # To compute point errors, set drop_intermediate=False
     if args.curve == "ROC":
@@ -65,9 +59,9 @@ def main():
     rvidx = rv_index(args.n_p)
     scale = args.epsilon / rvidx.L
 
-    for _ in range(args.n_reps):
-        tp_noisy = tp + generate_noise(scale, rvidx)
-        fp_noisy = fp + generate_noise(scale, rvidx)
+    for i in range(args.n_reps):
+        tp_noisy = tp + generate_noise(scale, rvidx, rng=i)
+        fp_noisy = fp + generate_noise(scale, rvidx, rng=i+1000)
 
         n_pos = max(tp_noisy)
         n_neg = max(fp_noisy)

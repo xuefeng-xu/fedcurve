@@ -503,7 +503,7 @@ if __name__ == "__main__":
     else:
         epsilon = 1.0
 
-    figsize = (5, 5)
+    figsize = (4, 4)
     run_fedcurve(args.dataset, args.classifier, n_q_list, epsilon, figsize)
     run_dpecdf(args.dataset, args.classifier, n_q_list, epsilon, figsize)
     run_imb_ratio(args.dataset, args.classifier, n_q_list, ratio_list, figsize)

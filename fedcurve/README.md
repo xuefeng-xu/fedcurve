@@ -12,8 +12,6 @@ python main.py --curve ROC --dataset adult --privacy DDP --epsilon 1
 
 Results are saved under `./result/fedcurve/{dataset}_{classifier}_{curve}.txt`
 
-## Parameters
-
 | Parameter | Description | Values |
 |---|---|---|
 | `curve` | Curve name | `ROC` or `PR` |

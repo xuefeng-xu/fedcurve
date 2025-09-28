@@ -46,7 +46,7 @@ def fedhist_server(hist_client, height, branch, privacy, post_processing=True):
 
 
 def fedhist_client(
-    y_score, height, branch, privacy, eps, n_clients, noise_type="continuous"
+    y_score, height, branch, privacy, eps, n_clients, noise_type="continuous", rng=None
 ):
     if privacy == "SA":
         # For Secure Aggregation, client just sends the leaf nodes
@@ -65,10 +65,15 @@ def fedhist_client(
                 sens=sens,
                 n_clients=n_clients,
                 noise_type=noise_type,
+                rng=rng,
             )
         else:  # "LDP"
             noise = partial(
-                LocalDP_noise, eps=eps / height, sens=sens, noise_type=noise_type
+                LocalDP_noise,
+                eps=eps / height,
+                sens=sens,
+                noise_type=noise_type,
+                rng=rng,
             )
 
         hier_hist = []
